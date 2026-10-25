@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Product Inventory & Analytics Dashboard</title>
+<style>
+  :root {
+    --bg: #f3f5fb;
+    --card: #ffffff;
+    --text: #1e2433;
+    --muted: #6b7385;
+    --primary: #4f46e5;
+    --primary-dark: #3f38c4;
+    --border: #e4e7f0;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --blue: #2563eb;
+    --blue-bg: #dbeafe;
+    --purple: #7c3aed;
+    --purple-bg: #ede9fe;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .navbar {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .navbar .inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+    color: #fff; display: grid; place-items: center; font-size: 1rem;
+  }
+  .nav-links { display: flex; gap: 22px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: .95rem; font-weight: 500; }
+  .nav-links a:hover { color: var(--primary); }
+
+  .hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #fff;
+    text-align: center;
+    padding: 56px 20px 80px;
+  }
+  .hero h1 { margin: 0 0 12px; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.2; }
+  .hero p { margin: 0 auto 26px; max-width: 560px; opacity: .9; }
+  .btn {
+    background: #fff;
+    color: var(--primary);
+    border: none;
+    padding: 12px 26px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.22); }
+
+  main { max-width: 1100px; margin: -48px auto 40px; padding: 0 20px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 10px rgba(30, 36, 51, .05);
+  }
+  .card h2 { margin: 0 0 14px; font-size: 1.1rem; }
+  .card h2 small { color: var(--muted); font-weight: 400; font-size: .85rem; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .stat .label { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+  .stat .value { font-size: 1.9rem; font-weight: 700; margin-top: 4px; }
+  .stat .value.accent { color: var(--primary); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  tbody tr:hover { background: #f8f9fe; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; }
+
+  .badge { padding: 4px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+  .badge.Budget   { background: var(--green-bg);  color: var(--green); }
+  .badge.Standard { background: var(--blue-bg);   color: var(--blue); }
+  .badge.Premium  { background: var(--purple-bg); color: var(--purple); }
+
+  /* ---------- Side panels ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .chip { background: var(--blue-bg); color: var(--blue); padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: .9rem; }
+  .report { list-style: none; margin: 0; padding: 0; }
+  .report li {
+    padding: 10px 12px; margin-bottom: 8px;
+    background: #f6f7fc; border-left: 4px solid var(--primary);
+    border-radius: 6px; font-weight: 600; font-size: .9rem;
+  }
+
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 10px 0 30px; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="inner">
+    <div class="brand"><div class="logo">📦</div> InventoryPro</div>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#inventory">Inventory</a>
+      <a href="#analytics">Analytics</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <h1>Interactive Product Inventory &amp; Analytics Dashboard</h1>
+  <p>Add products, assign category badges automatically and see live financial analytics for your inventory.</p>
+  <button class="btn" id="addBtn">+ Add New Product</button>
+</header>
+
+<main>
+  <section class="stats" id="overview">
+    <div class="card stat"><div class="label">Total Inventory Value</div><div class="value accent" id="statTotal">$0</div></div>
+    <div class="card stat"><div class="label">Total Products</div><div class="value" id="statCount">0</div></div>
+    <div class="card stat"><div class="label">Affordable (Under $200)</div><div class="value" id="statAffordable">0</div></div>
+    <div class="card stat"><div class="label">Value incl. 18% Tax</div><div class="value" id="statTax">$0</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card" id="inventory">
+      <h2>Inventory Roster <small>(forEach)</small></h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Product</th><th>Price</th><th>Category</th><th>+18% Tax</th><th>-10% Discount</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="analytics">
+      <h2>Affordable Items <small>(filter)</small></h2>
+      <div class="chips" id="affordableChips"></div>
+      <h2>Report Summary <small>(map)</small></h2>
+      <ul class="report" id="reportList"></ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>Capstone Mini Project &bull; JavaScript Inventory Dashboard</footer>
+
+<script>
+    function print(text) {
+    console.log(text);
+  }
+
+
+  function calculateTotal(items) {
+    let total = 0;
+    for (const item of items) {
+      total += item.price;
+    }
+    return total;
+  }
+
+  // Arrow functions: tax / discount with custom parameters
+  const applyTax = (price, taxPercent) => price + (price * taxPercent) / 100;
+  const applyDiscount = (price, discountPercent) => price - (price * discountPercent) / 100;
+
+  const BUDGET_LIMIT = 50;      // below this = Budget
+  const PREMIUM_LIMIT = 500;    // at or above this = Premium
+  const AFFORDABLE_LIMIT = 200;
+
+  function getCategory(price) {
+    let category;
+    switch (true) {
+      case price < BUDGET_LIMIT:
+        category = "Budget";
+        break;
+      case price < PREMIUM_LIMIT:
+        category = "Standard";
+        break;
+      default:
+        category = "Premium";
+    }
+    return category;
+  }
+
+  function validate(name, price) {
+    if (name === "") {
+      return "Product name cannot be empty.";
+    } else if (isNaN(price)) {
+      return "Price must be a number.";
+    } else if (price <= 0) {
+      return "Price must be greater than zero.";
+    } else {
+      return "";
+    }
+  }
+
+
+  print("--- Initializing Inventory System ---");
+
+  const inventory = [
+    { name: "Laptop", price: 800 },
+    { name: "Mouse", price: 25 }
+  ];
+  function addProductFlow() {
+    const MAX_ATTEMPTS = 3;
+    let attempts = 0;
+    let added = false;
+
+    while (attempts < MAX_ATTEMPTS) {
+      attempts++;
+
+      const nameInput = prompt("Enter new product name:", "Monitor");
+      if (nameInput === null) {            // user pressed Cancel
+        print("[Input cancelled by user]");
+        break;
+      }
+
+      const priceInput = prompt("Enter product price:", "150");
+      if (priceInput === null) {
+        print("[Input cancelled by user]");
+        break;
+      }
+
+      const name = String(nameInput).trim();
+      const price = Number(String(priceInput).replace("$", "").trim());
+
+      const error = validate(name, price);
+      if (error !== "") {
+        print("[Invalid input: " + error + " Attempt " + attempts + " of " + MAX_ATTEMPTS + "]");
+        continue;                           // bad input: ask again
+      }
+
+      let duplicate = false;
+      for (let i = 0; i < inventory.length; i++) {
+        if (inventory[i].name.toLowerCase() === name.toLowerCase()) {
+          duplicate = true;
+          break;                            // found, stop searching
+        }
+      }
+      if (duplicate) {
+        print("[\"" + name + "\" already exists in inventory. Try another name.]");
+        continue;
+      }
+
+      inventory.push({ name: name, price: price });
+      print("[Prompt executed: User adds \"" + name + "\" at \"$" + price + "\"]");
+      added = true;
+      break;                                // success: leave the loop
+    }
+
+    if (!added) {
+      print("[No new product was added]");
+    }
+  }
+
+    const money = n => "$" + (Number.isInteger(n) ? n : n.toFixed(2));
+
+  function renderDashboard() {
+    inventory.forEach(item => { item.category = getCategory(item.price); });
+
+    print("");
+    print("--- Processing Inventory Roster (forEach) ---");
+    inventory.forEach(item => {
+      print("* Item: " + item.name + " ($" + item.price + ") -> Category: " + item.category);
+    });
+
+    const total = calculateTotal(inventory);
+    const affordable = inventory.filter(item => item.price < AFFORDABLE_LIMIT);
+    const report = inventory.map(item => item.name.toUpperCase() + ": $" + item.price);
+
+    print("");
+    print("--- Financial Analytics ---");
+    print("Total Inventory Value: $" + total);
+    print("Filtered Affordable Items (Under $200): " + JSON.stringify(affordable.map(i => i.name)));
+    print("Formatted Report List: " + JSON.stringify(report));
+
+    document.getElementById("statTotal").textContent = money(total);
+    document.getElementById("statCount").textContent = inventory.length;
+    document.getElementById("statAffordable").textContent = affordable.length;
+    document.getElementById("statTax").textContent = money(applyTax(total, 18));
+
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+    inventory.forEach((item, index) => {
+      const tr = document.createElement("tr");
+      const cells = [
+        index + 1,
+        item.name,
+        money(item.price),
+        null,
+        money(applyTax(item.price, 18)),
+        money(applyDiscount(item.price, 10))
+      ];
+      cells.forEach((value, col) => {
+        const td = document.createElement("td");
+        if (col === 1) td.className = "name";
+        if (col === 3) {
+          const badge = document.createElement("span");
+          badge.className = "badge " + item.category;
+          badge.textContent = item.category;
+          td.appendChild(badge);
+        } else {
+          td.textContent = value;
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    const chips = document.getElementById("affordableChips");
+    chips.innerHTML = "";
+    affordable.forEach(item => {
+      const span = document.createElement("span");
+      span.className = "chip";
+      span.textContent = item.name;
+      chips.appendChild(span);
+    });
+
+    const list = document.getElementById("reportList");
+    list.innerHTML = "";
+    report.forEach(line => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      list.appendChild(li);
+    });
+  }
+
+    document.getElementById("addBtn").addEventListener("click", () => {
+    addProductFlow();
+    renderDashboard();
+  });
+
+  addProductFlow();
+  renderDashboard();
+</script>
+
+</body>
+</html>
